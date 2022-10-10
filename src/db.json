@@ -1,0 +1,1 @@
+[{"id":"1","processes":[{"id":"Process_1e186un"},{"id":"Process_0lyat6z"}],"actors":[{"id":"Participant_1jgyoq3","process_id":"Process_1e186un","name":"User"},{"id":"Participant_1mdkibv","process_id":"Process_0lyat6z","name":"Warehouse"}],"entity_map":{},"flow_map":{},"current_process":"Process_1e186un","current_step":"Activity_10ywf9o"}]

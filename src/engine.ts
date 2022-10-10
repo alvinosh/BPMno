@@ -1,60 +1,59 @@
-import {Action, Command, SeqFlow, UUID} from "./types";
-
+import { Action, Process, SeqFlow, UUID, Workflow } from './types';
 
 export class Engine {
-    id: UUID;
+  constructor() {}
 
-    entity_map: Map<UUID, Action>;
-    flow_map: Map<UUID, SeqFlow>;
+  process(workflow: Workflow, id: UUID): Process {
+    const p = workflow.processes.find((p) => p.id == id);
+    if (!!p) return p;
+    else throw Error(`Process With UUID ${id} Not Found`);
+  }
 
-    flows: SeqFlow[];
-    current_step: UUID;
+  entity(workflow: Workflow, id: UUID): Action {
+    if (!workflow.entity_map.get(id)) throw Error('Step Not Found In Map');
+    return workflow.entity_map.get(id)!;
+  }
 
-    constructor(id: UUID,actions: Action[], flows: SeqFlow[], start: UUID) {
-        this.entity_map = new Map();
-        this.flow_map = new Map();
-        this.id = id;
+  flow(workflow: Workflow, id: UUID): SeqFlow {
+    if (!workflow.flow_map.get(id)) throw Error('Step Not Found In Map');
+    return workflow.flow_map.get(id)!;
+  }
 
-        actions.forEach(action => {
-            this.entity_map.set(action.id, action);
-        })
+  findCommand(workflow: Workflow, name: string): SeqFlow | null {
+    let cmd = this.getCommands(workflow).find(
+      (a) => a.name.toLowerCase() === name.toLowerCase(),
+    );
+    if (cmd) return cmd;
+    return null;
+  }
 
-        flows.forEach(flow => {
-            this.flow_map.set(flow.id, flow);
-        })
-        this.current_step = start;
-        this.flows = flows;
+  getCurrentStep(workflow: Workflow): Action {
+    return this.entity(workflow, workflow.current_step);
+  }
+
+  getCommands(workflow: Workflow): SeqFlow[] {
+    return Array.from(workflow.flow_map.values()).filter(
+      (a) => a.source === workflow.current_step,
+    );
+  }
+
+  checkRole(workflow: Workflow, role: string) {
+    const role_names = workflow.actors
+      .filter((x) => x.process_id == workflow.current_process)
+      .map((x) => x.name);
+    return role_names.includes(role);
+  }
+
+  executeCommand(workflow: Workflow, role: string, command: SeqFlow) {
+    if (!this.checkRole(workflow, role)) {
+      console.log('No Permissions');
+      return;
     }
-
-    entity(id: UUID): Action{
-        if (!this.entity_map.get(id)) throw Error("Step Not Found In Map");
-        return this.entity_map.get(id)!
-    }
-
-    flow(id: UUID): SeqFlow {
-        if (!this.flow_map.get(id)) throw Error("Flow Not Found In Map");
-        return this.flow_map.get(id)!
-    }
-
-    findCommand(name: string): Command | null {
-        let cmd = this.getCommands().find(a => a.name === name);
-        if (cmd) return cmd;
-        return null;
-
-    }
-
-
-    getCurrentStep(): Action {
-        return this.entity(this.current_step);
-    }
-
-
-    getCommands(): Command[] {
-        return this.flows.filter(a => a.source === this.current_step).map(a => new Command(a));
-    }
-
-    executeCommand(command: Command) {
-        const flow = this.flow(command.id);
-        this.current_step = flow.target;
-    }
+    const flow = this.flow(workflow, command.id);
+    workflow.current_step = flow.target;
+    workflow.current_process = this.entity(
+      workflow,
+      workflow.current_step,
+    ).process_id;
+  }
 }

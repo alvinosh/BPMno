@@ -1,41 +1,40 @@
-import { join } from "path";
-import {BPMLParser,} from "./parser";
-import {Engine} from "./engine";
-import {EngineBuilder} from "./enginebuilder";
-import {EngineLogger} from "./logger";
-import { Command} from "./types";
-import {prompt} from "./utils";
-
+import { BPMLParser } from './parser';
+import { EngineLogger } from './logger';
+import { Engine } from './engine';
+import { prompt } from './utils';
+import { SeqFlow } from './types';
+import { WorkflowBuilder } from './workflowBuilder';
 
 async function main() {
-  const EB = new EngineBuilder(new BPMLParser());
-  const logger = new EngineLogger()
+  const logger = new EngineLogger();
+  const wf = new WorkflowBuilder(new BPMLParser());
 
-  let engine: Engine = await EB.initialiseFromBPMN( "1", join(process.cwd(), "/src/assets/diagram.bpmn"));
+  let workflow = await wf.fromXml('1', '/src/assets/courier.bpmn');
+
+  const engine = new Engine();
 
   while (true) {
-    logger.log_step(engine.getCurrentStep())
+    logger.log_step(engine.getCurrentStep(workflow));
 
-    if (engine.getCurrentStep().type == "EndEvent") {
+    if (engine.getCurrentStep(workflow).type == 'EndEvent') {
       break;
     }
 
-    logger.log_commands(engine.getCommands())
+    logger.log_commands(engine.getCommands(workflow));
 
-    let cmd: Command | null = null;
+    let cmd: SeqFlow | null = null;
     do {
-      const user_command = await prompt("Enter Command: ");
-      cmd = engine.findCommand(user_command!);
-    } while (!cmd)
+      const user_command = await prompt('Enter Command: ');
+      cmd = engine.findCommand(workflow, user_command!);
+    } while (!cmd);
 
-    engine.executeCommand(cmd);
-
+    engine.executeCommand(workflow, 'User', cmd);
   }
 
-  console.log("WorkFlow Complete");
-
+  console.log('WorkFlow Complete');
+  return;
 }
 
-main().catch(e => {
-  console.log(e);
-})
+main().catch((e) => {
+  console.error(e);
+});
