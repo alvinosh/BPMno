@@ -1,7 +1,8 @@
 import { Action, Process, SeqFlow, UUID, Workflow } from './types';
+import { Repository } from './jsonDB';
 
 export class Engine {
-  constructor() {}
+  constructor(private repository: Repository<Workflow>) {}
 
   process(workflow: Workflow, id: UUID): Process {
     const p = workflow.processes.find((p) => p.id == id);
@@ -55,5 +56,6 @@ export class Engine {
       workflow,
       workflow.current_step,
     ).process_id;
+    this.repository.save(workflow);
   }
 }

@@ -4,14 +4,15 @@ import { Engine } from './engine';
 import { prompt } from './utils';
 import { SeqFlow } from './types';
 import { WorkflowBuilder } from './workflowBuilder';
+import { JSONDB } from './jsonDB';
 
 async function main() {
   const logger = new EngineLogger();
-  const wf = new WorkflowBuilder(new BPMLParser());
+  const wf = new WorkflowBuilder(new JSONDB(), new BPMLParser());
 
-  let workflow = await wf.fromXml('1', '/src/assets/courier.bpmn');
+  let workflow = await wf.fromXml('4', '/src/assets/courier.bpmn');
 
-  const engine = new Engine();
+  const engine = new Engine(new JSONDB());
 
   while (true) {
     logger.log_step(engine.getCurrentStep(workflow));

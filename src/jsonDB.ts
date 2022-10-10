@@ -1,4 +1,4 @@
-import { UUID, Workflow } from './types';
+import { export_workflow, import_workflow, UUID, Workflow } from './types';
 import { readFileSync, writeFileSync } from 'fs';
 import { join } from 'path';
 
@@ -18,16 +18,20 @@ export class JSONDB implements Repository<Workflow> {
     return [];
   }
 
-  findByUUID(_uuid: UUID): Workflow | null {
-    let result: Workflow[] = JSON.parse(
-      readFileSync(this.DB_SOURCE).toString(),
-    );
-    return result.length == 1 ? result[0] : null;
+  findByUUID(uuid: UUID): Workflow | null {
+    let result = import_workflow(readFileSync(this.DB_SOURCE).toString());
+    return result.find((x) => x.id == uuid)!;
   }
 
   save(workflow: Workflow): Workflow {
-    let json = JSON.stringify([workflow]);
-    writeFileSync(this.DB_SOURCE, json, 'utf8');
+    let result = import_workflow(readFileSync(this.DB_SOURCE).toString());
+    let idx = result.findIndex((x) => x.id == workflow.id);
+    if (idx != -1) {
+      result.splice(idx, 1);
+    }
+    result.push(workflow);
+
+    writeFileSync(this.DB_SOURCE, export_workflow(result), 'utf8');
     return workflow;
   }
 
